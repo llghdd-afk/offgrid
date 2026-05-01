@@ -35,7 +35,7 @@
 - `verifier.py` _run_tests(): list_dir错误时不误判为"无测试"
 
 ### 回归测试状态
-pytest kaiwu/tests/ → 通过 174 / 失败 0
+pytest offgrid/tests/ → 通过 174 / 失败 0
 
 ### 出厂条件
 - F1 全量回归: 174/174 ✅
@@ -69,7 +69,7 @@ pytest kaiwu/tests/ → 通过 174 / 失败 0
 - `verifier.py` _run_tests(): list_dir错误结果过滤
 
 ### 回归测试状态
-pytest kaiwu/tests/ → 通过 174 / 失败 0
+pytest offgrid/tests/ → 通过 174 / 失败 0
 
 ### 出厂条件
 - F1 全量回归: 174/174 ✅
@@ -103,7 +103,7 @@ pytest kaiwu/tests/ → 通过 174 / 失败 0
 - `graph_builder.py` _get_conn(): sqlite3.connect加timeout=10.0
 
 ### 回归测试状态
-pytest kaiwu/tests/ → 通过 174 / 失败 0
+pytest offgrid/tests/ → 通过 174 / 失败 0
 
 ### 出厂条件
 - F1 全量回归: 174/174 ✅
@@ -155,7 +155,7 @@ pytest kaiwu/tests/ → 通过 174 / 失败 0
 - `expert_packager.py` install(): decode加try/except UnicodeDecodeError
 
 ### 回归测试状态
-pytest kaiwu/tests/ → 通过 174 / 失败 0
+pytest offgrid/tests/ → 通过 174 / 失败 0
 
 ### 出厂条件（最终）
 - F1 全量回归: 174/174 ✅

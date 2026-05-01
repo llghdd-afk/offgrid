@@ -1,6 +1,6 @@
 #!/bin/sh
 # KwCode 安装程序 - Mac/Linux
-# 用法: curl -sSL https://raw.githubusercontent.com/kaiwu-agent/kaiwu/main/install.sh | sh
+# 用法: curl -sSL https://raw.githubusercontent.com/offgrid-agent/offgrid/main/install.sh | sh
 #   或: chmod +x install.sh && ./install.sh
 
 set -e
@@ -94,14 +94,14 @@ else
     fi
 fi
 
-# ── Step 3: pip install kaiwu ────────────────────────────────
+# ── Step 3: pip install offgrid ────────────────────────────────
 step "安装 KwCode..."
 
 INSTALLED=0
 
 # 尝试默认源
 info "尝试默认 pip 源..."
-if "$PYTHON_CMD" -m pip install kaiwu --quiet 2>/dev/null; then
+if "$PYTHON_CMD" -m pip install offgrid --quiet 2>/dev/null; then
     INSTALLED=1
     info "安装成功（默认源）"
 fi
@@ -109,7 +109,7 @@ fi
 # 降级到清华镜像
 if [ "$INSTALLED" -eq 0 ]; then
     warn "默认源安装失败，切换到清华镜像..."
-    if "$PYTHON_CMD" -m pip install kaiwu \
+    if "$PYTHON_CMD" -m pip install offgrid \
         -i https://pypi.tuna.tsinghua.edu.cn/simple \
         --trusted-host pypi.tuna.tsinghua.edu.cn \
         --quiet 2>/dev/null; then
@@ -120,7 +120,7 @@ fi
 
 if [ "$INSTALLED" -eq 0 ]; then
     err "KwCode 安装失败"
-    info "请手动执行: $PYTHON_CMD -m pip install kaiwu"
+    info "请手动执行: $PYTHON_CMD -m pip install offgrid"
     info "如果网络慢，加上: -i https://pypi.tuna.tsinghua.edu.cn/simple"
     exit 1
 fi
@@ -189,16 +189,16 @@ step "启动搜索服务（SearXNG）..."
 
 if command -v docker >/dev/null 2>&1; then
     # 已在运行则跳过
-    if docker ps --format '{{.Names}}' | grep -q "^kwcode-searxng$"; then
+    if docker ps --format '{{.Names}}' | grep -q "^offgrid-searxng$"; then
         info "SearXNG 已在运行，跳过"
-    elif docker ps -a --format '{{.Names}}' | grep -q "^kwcode-searxng$"; then
-        docker start kwcode-searxng
+    elif docker ps -a --format '{{.Names}}' | grep -q "^offgrid-searxng$"; then
+        docker start offgrid-searxng
         info "SearXNG 已重新启动"
     else
         info "拉取 SearXNG 镜像（约150MB）..."
         docker pull searxng/searxng
         docker run -d \
-            --name kwcode-searxng \
+            --name offgrid-searxng \
             --restart always \
             -p 8080:8080 \
             searxng/searxng
@@ -216,23 +216,23 @@ else
     info "安装 Docker 可获得更好的搜索体验：https://docs.docker.com/get-docker/"
 fi
 
-# ── Step 6: kwcode init ──────────────────────────────────────
+# ── Step 6: offgrid init ──────────────────────────────────────
 step "初始化 KwCode..."
 
-if command -v kwcode >/dev/null 2>&1; then
-    kwcode init 2>/dev/null && info "KAIWU.md 已初始化" || info "跳过初始化（可稍后在项目目录执行 kwcode init）"
+if command -v offgrid >/dev/null 2>&1; then
+    offgrid init 2>/dev/null && info "KAIWU.md 已初始化" || info "跳过初始化（可稍后在项目目录执行 offgrid init）"
 else
-    info "kwcode 命令未在 PATH 中，跳过初始化"
-    info "尝试: $PYTHON_CMD -m kaiwu init"
+    info "offgrid 命令未在 PATH 中，跳过初始化"
+    info "尝试: $PYTHON_CMD -m offgrid init"
 fi
 
-# ── Step 7: kwcode status ────────────────────────────────────
+# ── Step 7: offgrid status ────────────────────────────────────
 step "验证安装..."
 
-if command -v kwcode >/dev/null 2>&1; then
-    kwcode status || warn "状态检查失败，但安装可能已成功"
+if command -v offgrid >/dev/null 2>&1; then
+    offgrid status || warn "状态检查失败，但安装可能已成功"
 else
-    "$PYTHON_CMD" -m kaiwu status 2>/dev/null || warn "状态检查失败"
+    "$PYTHON_CMD" -m offgrid status 2>/dev/null || warn "状态检查失败"
 fi
 
 # ── 完成 ─────────────────────────────────────────────────────
@@ -243,9 +243,9 @@ printf "  ${GREEN}╚═══════════════════�
 printf "\n"
 printf "  ${CYAN}下一步:${NC}\n"
 printf "    1. cd 到你的项目目录\n"
-printf "    2. kwcode init          # 初始化项目记忆\n"
-printf "    3. kwcode               # 进入交互模式\n"
-printf '    4. kwcode "修复登录bug"  # 直接执行任务\n'
+printf "    2. offgrid init          # 初始化项目记忆\n"
+printf "    3. offgrid               # 进入交互模式\n"
+printf '    4. offgrid "修复登录bug"  # 直接执行任务\n'
 printf "\n"
-printf "  ${GRAY}文档: https://github.com/kaiwu-agent/kaiwu${NC}\n"
+printf "  ${GRAY}文档: https://github.com/offgrid-agent/offgrid${NC}\n"
 printf "\n"

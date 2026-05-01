@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to KWCode are documented here.
+All notable changes to OffGrid are documented here.
 
 ---
 
@@ -196,7 +196,7 @@ Token tracking: 3次调用共639 tokens
 
 ### Architecture: 元专家体系定稿
 
-KWCode 的专家系统从"按业务领域枚举"升级为"按原子能力分层 + 领域知识注入"。
+OffGrid 的专家系统从"按业务领域枚举"升级为"按原子能力分层 + 领域知识注入"。
 
 **5 个元专家（原子能力层，固定不变）：**
 
@@ -284,7 +284,7 @@ BugFix · FastAPI · TestGen · API · DeepSeekAPI · Docstring · MyBatis · Of
 
 ## References
 
-| 论文 | 对 KWCode 的影响 |
+| 论文 | 对 OffGrid 的影响 |
 |------|-----------------|
 | Agentless (ICSE 2025) | 整体确定性流水线架构 |
 | CodeCompass (2026) | AST 调用图定位 |

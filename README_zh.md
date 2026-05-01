@@ -1,4 +1,4 @@
-# KWCode · 天工开物
+# OffGrid · 离线编码
 
 <div align="center">
 
@@ -24,31 +24,31 @@
 
 小模型窗口只有 8K-32K。对话几轮后 context 塞满，模型开始胡说。现有工具没有上下文管理，用着用着就废了。
 
-> KWCode 解法：**纯算法上下文压缩**（头尾保留 + 中间关键词提取，<10ms），自动在 context 快满时压缩历史对话。你能一直聊下去，不会突然变傻。
+> OffGrid 解法：**纯算法上下文压缩**（头尾保留 + 中间关键词提取，<10ms），自动在 context 快满时压缩历史对话。你能一直聊下去，不会突然变傻。
 
 **痛点二：错误重复回复**
 
 小模型修 bug 失败后，用同样的方式再试一遍，三次机会全浪费在同一个错误上。
 
-> KWCode 解法：**三阶段重试策略**——第一次正常描述，第二次从错误信息出发，第三次最小化修改。每次重试前先做 Reflection（LLM 一句话分析上次为什么失败），绝不重复同样的错。失败模式还会记录到 PATTERN.md，下次遇到类似任务直接提高风险等级。
+> OffGrid 解法：**三阶段重试策略**——第一次正常描述，第二次从错误信息出发，第三次最小化修改。每次重试前先做 Reflection（LLM 一句话分析上次为什么失败），绝不重复同样的错。失败模式还会记录到 PATTERN.md，下次遇到类似任务直接提高风险等级。
 
 **痛点三：不能调用工具**
 
 大部分本地 agent 框架只能生成代码文本，不能真正执行命令、读写文件、跑测试。生成的代码对不对，全靠人肉验证。
 
-> KWCode 解法：**内置 5 个确定性工具**（read_file / write_file / run_bash / list_dir / git），Generator 生成 patch 后 Verifier 自动执行语法检查 + pytest，失败立即重试。不是"建议你跑一下测试"，而是真的帮你跑了。
+> OffGrid 解法：**内置 5 个确定性工具**（read_file / write_file / run_bash / list_dir / git），Generator 生成 patch 后 Verifier 自动执行语法检查 + pytest，失败立即重试。不是"建议你跑一下测试"，而是真的帮你跑了。
 
 **痛点四：数据安全**
 
 Claude Code、Cursor 把代码发到海外服务器。公司代码、内网项目走不通。
 
-> KWCode 解法：**全部本地运行**，代码不出你的电脑。模型跑在 Ollama，搜索跑在本地 SearXNG，统计数据存本地 SQLite。零网络依赖（搜索增强可选）。
+> OffGrid 解法：**全部本地运行**，代码不出你的电脑。模型跑在 Ollama，搜索跑在本地 SearXNG，统计数据存本地 SQLite。零网络依赖（搜索增强可选）。
 
 **痛点五：代码定位靠猜**
 
 现有工具把文件列表丢给 LLM 让它猜哪个文件相关。小模型猜错文件，后面全错。
 
-> KWCode 解法：**BM25 + AST 调用图**两阶段定位，毫秒级，不调 LLM。沿调用链追踪隐藏依赖，不靠猜。
+> OffGrid 解法：**BM25 + AST 调用图**两阶段定位，毫秒级，不调 LLM。沿调用链追踪隐藏依赖，不靠猜。
 
 ---
 
@@ -81,7 +81,7 @@ Claude Code、Cursor 把代码发到海外服务器。公司代码、内网项�
 
 **什么是 G3 类任务**：bug 所在的文件名和函数名，与错误描述没有任何关键词重叠，只能通过调用链追踪发现。这是真实项目里最常见、最难定位的一类 bug。
 
-**KWCode 的两阶段检索**：
+**OffGrid 的两阶段检索**：
 
 ```
 用户描述 "修复登录失败的 bug"
@@ -107,7 +107,7 @@ Claude Code、Cursor 把代码发到海外服务器。公司代码、内网项�
 
 **理论来源**：EE-MCP（NeurIPS 2025）——从任务执行轨迹自动提取经验，验证可显著提升后续同类任务成功率。
 
-KWCode 的专家会随使用自动生长：
+OffGrid 的专家会随使用自动生长：
 
 ```
 第1天：15 个预置专家开箱即用
@@ -124,17 +124,17 @@ KWCode 的专家会随使用自动生长：
 专家可以导出分享：
 
 ```bash
-kwcode expert export SpringBootExpert
+offgrid expert export SpringBootExpert
 # → SpringBootExpert-1.0.0.kwx
 
-kwcode expert install path/to/Vue3Expert.kwx
+offgrid expert install path/to/Vue3Expert.kwx
 ```
 
 ---
 
 ### 原理四：模型能力自适应
 
-KWCode 是全球唯一针对本地小模型能力差异做自适应的 coding agent。
+OffGrid 是全球唯一针对本地小模型能力差异做自适应的 coding agent。
 
 | 模型规模 | 自动策略 |
 |---------|---------|
@@ -157,7 +157,7 @@ KWCode 是全球唯一针对本地小模型能力差异做自适应的 coding ag
 ### 流程控制
 - `/plan 计划模式`：显示执行步骤+风险等级（High/Medium/Low），确认后才动文件
 - `Checkpoint 快照`：任务开始前自动备份，失败一键还原，降级建议
-- `KWCODE.md 项目规则`：写项目约定，按任务类型分段注入，永远不忘
+- `OFFGRID.md 项目规则`：写项目约定，按任务类型分段注入，永远不忘
 
 ### 知识积累
 - 三层记忆：PROJECT.md（项目结构）/ EXPERT.md（专家记录）/ PATTERN.md（失败模式）
@@ -166,7 +166,7 @@ KWCode 是全球唯一针对本地小模型能力差异做自适应的 coding ag
 
 ### 搜索增强
 - 默认 DuckDuckGo（零配置，pip install 就能用）
-- 可选 SearXNG 自部署：`kwcode setup-search` 一键安装，数据完全不出网
+- 可选 SearXNG 自部署：`offgrid setup-search` 一键安装，数据完全不出网
 - 四级内容提取：trafilatura → newspaper3k → readabilipy → BeautifulSoup
 - 并行搜索 + BM25 重排：结果质量优先
 - 意图感知：代码/论文/包/debug 自动优化搜索词
@@ -177,13 +177,13 @@ KWCode 是全球唯一针对本地小模型能力差异做自适应的 coding ag
 - Word：python-docx，中文首行缩进，规范字体，表格样式
 
 ### 价值可见
-- `kwcode stats`：完成任务数、节省时间估算、专属专家数
+- `offgrid stats`：完成任务数、节省时间估算、专属专家数
 - 飞轮通知：专家投产时弹出，显示成功率提升和速度对比
 - 里程碑提醒：完成 50/100/200 个任务时自动汇报
 
 ### 中国本地化
 
-| 场景 | CC / Hermes | KWCode |
+| 场景 | CC / Hermes | OffGrid |
 |------|------------|--------|
 | Windows 运行 | 仅 WSL2 / 云端 | cmd/PowerShell 原生 |
 | 搜索增强 | DDG/Brave（被墙） | SearXNG 自部署 / DDG fallback |
@@ -194,7 +194,7 @@ KWCode 是全球唯一针对本地小模型能力差异做自适应的 coding ag
 
 ## 与竞品对比
 
-| 功能 | Claude Code | Hermes | KWCode |
+| 功能 | Claude Code | Hermes | OffGrid |
 |------|------------|--------|--------|
 | 数据安全 | ❌ 代码上传云端 | ✅ 本地 | ✅ 本地 |
 | Windows 原生 | ✅ | ❌ 仅 WSL2 | ✅ |
@@ -235,14 +235,14 @@ KWCode 是全球唯一针对本地小模型能力差异做自适应的 coding ag
 ### 安装
 
 ```bash
-# 安装 KWCode
-pip install kwcode
+# 安装 OffGrid
+pip install offgrid
 
 # 国内加速：
-pip install kwcode -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install offgrid -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 启动
-kwcode
+offgrid
 ```
 
 首次启动会引导你配置模型连接，按提示操作即可。
@@ -255,7 +255,7 @@ kwcode
 ### 可选：安装搜索增强
 
 ```bash
-kwcode setup-search
+offgrid setup-search
 ```
 
 需要 Docker Desktop 已安装并运行。会自动拉取 SearXNG 镜像（约 200MB）并启动容器。不装也能用，默认走 DuckDuckGo 搜索。
@@ -267,7 +267,8 @@ kwcode setup-search
 ### 交互模式（推荐）
 
 ```bash
-kwcode
+offgrid
+```
 ```
 
 进入 REPL，直接输入任务描述：
@@ -281,8 +282,8 @@ kwcode
 ### 单次执行
 
 ```bash
-kwcode "修复登录验证失败的问题"
-kwcode --plan "重构数据库连接层"
+offgrid "修复登录验证失败的问题"
+offgrid --plan "重构数据库连接层"
 ```
 
 ### REPL 命令
@@ -300,7 +301,7 @@ kwcode --plan "重构数据库连接层"
 
 ### 接入任意 API
 
-KWCode 支持任何 OpenAI 兼容的 API，包括 DeepSeek、Qwen 云端、硅基流动、零一万物、Groq 等。
+OffGrid 支持任何 OpenAI 兼容的 API，包括 DeepSeek、Qwen 云端、硅基流动、零一万物、Groq 等。
 
 **临时切换**（当前窗口有效，关掉就恢复）：
 
@@ -324,12 +325,12 @@ KWCode 支持任何 OpenAI 兼容的 API，包括 DeepSeek、Qwen 云端、硅�
 也可以在启动时通过命令行指定：
 
 ```bash
-kwcode --ollama-url https://api.deepseek.com
+offgrid --ollama-url https://api.deepseek.com
 ```
 
 ### 项目规则文件
 
-在项目根目录创建 `KWCODE.md`，写入你的项目约定：
+在项目根目录创建 `OFFGRID.md`，写入你的项目约定：
 
 ```markdown
 ## [all] 通用规则
@@ -345,7 +346,7 @@ kwcode --ollama-url https://api.deepseek.com
 - 必须写 docstring
 ```
 
-KWCode 启动时自动加载，按任务类型注入对应规则。
+OffGrid 启动时自动加载，按任务类型注入对应规则。
 
 ### Office 文档生成
 
@@ -358,17 +359,17 @@ KWCode 启动时自动加载，按任务类型注入对应规则。
 ### 专家管理
 
 ```bash
-kwcode expert list                    # 查看所有专家
-kwcode expert info BugFix             # 查看专家详情
-kwcode expert export BugFix           # 导出为 .kwx 文件
-kwcode expert install path/to/x.kwx   # 安装外部专家
-kwcode expert create MyExpert         # 创建自定义专家
+offgrid expert list                    # 查看所有专家
+offgrid expert info BugFix             # 查看专家详情
+offgrid expert export BugFix           # 导出为 .kwx 文件
+offgrid expert install path/to/x.kwx   # 安装外部专家
+offgrid expert create MyExpert         # 创建自定义专家
 ```
 
 ### 价值报告
 
 ```bash
-kwcode stats
+offgrid stats
 ```
 
 显示过去 30 天的任务完成数、节省时间估算、最活跃专家。数据仅存本地。
@@ -378,24 +379,25 @@ kwcode stats
 ## 开发者安装
 
 ```bash
-git clone https://github.com/val1813/kwcode.git
-cd kwcode
+```bash
+offgrid
+```
 pip install -e ".[dev]"
-python -m pytest kaiwu/tests/ -v --ignore=kaiwu/tests/bench_tasks
+python -m pytest offgrid/tests/ -v --ignore=offgrid/tests/bench_tasks
 # 282 tests should pass
 ```
 
 ### 项目结构
 
 ```
-kaiwu/
+offgrid/
 ├── cli/main.py              # CLI 入口，REPL，spinner，结果摘要
 ├── core/
 │   ├── gate.py              # LLM 任务分类
 │   ├── orchestrator.py      # 确定性流水线编排
 │   ├── planner.py           # /plan 计划模式 + 风险评估
 │   ├── checkpoint.py        # 文件快照（git stash / 文件复制）
-│   ├── kwcode_md.py         # KWCODE.md 规则加载
+│   ├── offgrid_md.py         # OFFGRID.md 规则加载
 │   └── model_capability.py  # 模型能力自适应
 ├── experts/
 │   ├── locator.py           # BM25 + 调用图定位
@@ -431,7 +433,7 @@ kaiwu/
 
 ## 参与贡献
 
-**KWCode 是中国开发者做的，也需要中国开发者一起来完善。**
+**OffGrid 是中国开发者做的，也需要中国开发者一起来完善。**
 
 不管你在北京还是新加坡，在上海还是旧金山，只要你是华人开发者，都欢迎参与。
 
@@ -446,7 +448,7 @@ K8sExpert / DockerExpert / RedisExpert / MySQLExpert
 ```
 
 ```bash
-kwcode expert create MyExpert
+offgrid expert create MyExpert
 # 用自己真实项目测试 ≥5 个任务，跑通率 ≥80%
 # 提 PR
 ```
@@ -458,10 +460,11 @@ kwcode expert create MyExpert
 ### 贡献流程
 
 ```bash
-git clone https://github.com/val1813/kwcode.git
-cd kwcode
+```bash
+offgrid
+```
 pip install -e ".[dev]"
-python -m pytest kaiwu/tests/ -v --ignore=kaiwu/tests/bench_tasks
+python -m pytest offgrid/tests/ -v --ignore=offgrid/tests/bench_tasks
 git checkout -b feat/your-feature
 # 开发 → 测试 → PR
 ```
@@ -479,10 +482,10 @@ MIT — 自由使用、修改、分发。
 
 <div align="center">
 
-**如果 KWCode 对你有帮助，请给一个 ⭐**
+**如果 OffGrid 对你有帮助，请给一个 ⭐**
 
 这不只是一个工具，是华人开发者社区共同的技术资产。
 
-*天工开物 · KWCode*
+*离线编码 · OffGrid*
 
 </div>

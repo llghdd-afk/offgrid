@@ -1,4 +1,4 @@
-# KWCode 第二轮走查报告
+# OffGrid 第二轮走查报告
 
 > 日期：2026-04-30
 > 模型：qwen3:8b (Q4_K_M, 本地 Ollama)

@@ -1,4 +1,4 @@
-# KWCode · 天工开物
+# OffGrid · 离线编码
 
 <div align="center">
 
@@ -31,7 +31,7 @@
 
 现有 coding agent 框架（Claude Code、Cursor、OpenCode）都是给强 LLM 设计的——靠模型的强推理能力调用工具、自主决策、完成任务。本地开源模型（8B-30B）做不到这些，会出错，会有幻觉。
 
-KWCode 的思路不同：**LLM 只做分类和生成，确定性流水线做决策和验证。** 专家系统承载领域知识，飞轮从使用中自动积累经验。小模型只需要在极小的 context 里做一件明确的事。
+OffGrid 的思路不同：**LLM 只做分类和生成，确定性流水线做决策和验证。** 专家系统承载领域知识，飞轮从使用中自动积累经验。小模型只需要在极小的 context 里做一件明确的事。
 
 ### 本地模型跑 Coding Agent 的五个核心痛点
 
@@ -39,31 +39,31 @@ KWCode 的思路不同：**LLM 只做分类和生成，确定性流水线做决�
 
 小模型窗口只有 8K-32K。对话几轮后 context 塞满，模型开始胡说。
 
-> KWCode 解法：**纯算法上下文压缩**（头尾保留 + 中间关键词提取，<10ms），自动在 context 快满时压缩历史对话。
+> OffGrid 解法：**纯算法上下文压缩**（头尾保留 + 中间关键词提取，<10ms），自动在 context 快满时压缩历史对话。
 
 **痛点二：错误重复**
 
 小模型修 bug 失败后，用同样的方式再试一遍，三次机会全浪费在同一个错误上。
 
-> KWCode 解法：**三阶段重试 + Reflection + Debug Subagent**——第一次正常描述，第二次从错误信息出发（注入运行时调试数据），第三次最小化修改。每次重试前先做 Reflection（LLM 分析上次为什么失败）+ Debug Subagent（sys.settrace 捕获真实变量值），绝不重复同样的错。
+> OffGrid 解法：**三阶段重试 + Reflection + Debug Subagent**——第一次正常描述，第二次从错误信息出发（注入运行时调试数据），第三次最小化修改。每次重试前先做 Reflection（LLM 分析上次为什么失败）+ Debug Subagent（sys.settrace 捕获真实变量值），绝不重复同样的错。
 
 **痛点三：不能调用工具**
 
 大部分本地 agent 框架只能生成代码文本，不能真正执行命令、读写文件、跑测试。
 
-> KWCode 解法：**内置 5 个确定性工具**（read_file / write_file / run_bash / list_dir / git），Generator 生成 patch 后 Verifier 自动执行语法检查 + pytest，失败立即重试。
+> OffGrid 解法：**内置 5 个确定性工具**（read_file / write_file / run_bash / list_dir / git），Generator 生成 patch 后 Verifier 自动执行语法检查 + pytest，失败立即重试。
 
 **痛点四：数据安全**
 
 Claude Code、Cursor 把代码发到海外服务器。公司代码、内网项目走不通。
 
-> KWCode 解法：**全部本地运行**，代码不出你的电脑。模型跑在本地，搜索跑在本地 SearXNG，统计数据存本地 SQLite。零网络依赖（搜索增强可选）。
+> OffGrid 解法：**全部本地运行**，代码不出你的电脑。模型跑在本地，搜索跑在本地 SearXNG，统计数据存本地 SQLite。零网络依赖（搜索增强可选）。
 
 **痛点五：代码定位靠猜**
 
 现有工具把文件列表丢给 LLM 让它猜哪个文件相关。小模型猜错文件，后面全错。
 
-> KWCode 解法：**BM25 + AST 调用图**两阶段定位，毫秒级，不调 LLM。沿调用链追踪隐藏依赖，不靠猜。
+> OffGrid 解法：**BM25 + AST 调用图**两阶段定位，毫秒级，不调 LLM。沿调用链追踪隐藏依赖，不靠猜。
 
 ---
 
@@ -76,7 +76,7 @@ Claude Code、Cursor 把代码发到海外服务器。公司代码、内网项�
 - GitHub Copilot Atomic Skills（2025）——5 原子能力组合出所有复杂任务
 - MoE Routing Geometry（arXiv:2604.09780）——专家按能力分，不按领域分
 
-KWCode 的 5 个元专家（原子能力层，固定不变）：
+OffGrid 的 5 个元专家（原子能力层，固定不变）：
 
 ```
 用户输入
@@ -125,7 +125,7 @@ Verifier 失败
 
 **理论来源**：LLMCompiler（ICML 2024）——任务分解 + 并行调度显著提升复杂任务完成率。
 
-KWCode 实现了轻量 DAG 调度器（零新依赖，ThreadPoolExecutor + Kahn 拓扑排序）：
+OffGrid 实现了轻量 DAG 调度器（零新依赖，ThreadPoolExecutor + Kahn 拓扑排序）：
 
 ```
 /multi task1 ; task2 ; task3          ← 全部并行
@@ -185,7 +185,7 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 - BM25 + 调用图两阶段定位，G3 隐藏依赖准确率 99.4%（论文验证）
 - Generator 只改必要部分，从文件读 original，LLM 只生成 modified
 - 三阶段重试 + Reflection + Debug Subagent，不重复同样的错
-- Cross-Encoder 搜索结果重排（可选，`pip install kwcode[rerank]`）
+- Cross-Encoder 搜索结果重排（可选，`pip install offgrid[rerank]`）
 
 ### 多任务执行
 - `/multi` 命令：串行（依赖链）+ 并行（独立任务）混合执行
@@ -195,7 +195,7 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 ### 流程控制
 - `/plan 计划模式`：显示执行步骤+风险等级（High/Medium/Low），确认后才动文件
 - `Checkpoint 快照`：任务开始前自动备份，失败一键还原
-- `KWCODE.md 项目规则`：写项目约定，按任务类型分段注入
+- `OFFGRID.md 项目规则`：写项目约定，按任务类型分段注入
 
 ### 知识积累
 - 三层记忆：PROJECT.md / EXPERT.md / PATTERN.md
@@ -204,7 +204,7 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 
 ### 搜索增强
 - 默认 DuckDuckGo（零配置）
-- 可选 SearXNG 自部署：`kwcode setup-search` 一键安装
+- 可选 SearXNG 自部署：`offgrid setup-search` 一键安装
 - 四级内容提取 + BM25 重排 + Cross-Encoder 精排
 - 意图感知：代码/论文/包/debug 自动优化搜索词
 
@@ -212,13 +212,13 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 - Excel / PPT / Word 生成
 
 ### 价值可见
-- `kwcode stats`：完成任务数、节省时间估算
+- `offgrid stats`：完成任务数、节省时间估算
 - 飞轮通知：专家投产时弹出
 - 里程碑提醒：完成 50/100/200 个任务时自动汇报
 
 ### 中国本地化
 
-| 场景 | CC / Hermes | KWCode |
+| 场景 | CC / Hermes | OffGrid |
 |------|------------|--------|
 | Windows 运行 | 仅 WSL2 / 云端 | cmd/PowerShell 原生 |
 | 搜索增强 | DDG/Brave（被墙） | SearXNG 自部署 / DDG fallback |
@@ -229,7 +229,7 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 
 ## 与竞品对比
 
-| 功能 | Claude Code | Hermes | KWCode |
+| 功能 | Claude Code | Hermes | OffGrid |
 |------|------------|--------|--------|
 | 数据安全 | ❌ 代码上传云端 | ✅ 本地 | ✅ 本地 |
 | Windows 原生 | ✅ | ❌ 仅 WSL2 | ✅ |
@@ -270,17 +270,17 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 ### 安装
 
 ```bash
-# 安装 KWCode
-pip install kwcode
+# 安装 OffGrid
+pip install offgrid
 
 # 国内加速：
-pip install kwcode -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install offgrid -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 可选：Cross-Encoder 搜索重排
-pip install kwcode[rerank]
+pip install offgrid[rerank]
 
 # 启动
-kwcode
+offgrid
 ```
 
 首次启动会引导你配置模型连接，按提示操作即可。
@@ -293,7 +293,7 @@ kwcode
 ### 可选：安装搜索增强
 
 ```bash
-kwcode setup-search
+offgrid setup-search
 ```
 
 需要 Docker Desktop 已安装并运行。会自动拉取 SearXNG 镜像并启动容器。不装也能用，默认走 DuckDuckGo 搜索。
@@ -305,7 +305,7 @@ kwcode setup-search
 ### 交互模式（推荐）
 
 ```bash
-kwcode
+offgrid
 ```
 
 进入 REPL，直接输入任务描述：
@@ -340,8 +340,8 @@ kwcode
 ### 单次执行
 
 ```bash
-kwcode "修复登录验证失败的问题"
-kwcode --plan "重构数据库连接层"
+offgrid "修复登录验证失败的问题"
+offgrid --plan "重构数据库连接层"
 ```
 
 ### REPL 命令
@@ -360,7 +360,7 @@ kwcode --plan "重构数据库连接层"
 
 ### 接入任意 API
 
-KWCode 支持任何 OpenAI 兼容的 API，包括 DeepSeek、Qwen 云端、硅基流动、零一万物、Groq 等。
+OffGrid 支持任何 OpenAI 兼容的 API，包括 DeepSeek、Qwen 云端、硅基流动、零一万物、Groq 等。
 
 ```
 /api temp https://api.deepseek.com your-api-key      # 临时切换
@@ -370,7 +370,7 @@ KWCode 支持任何 OpenAI 兼容的 API，包括 DeepSeek、Qwen 云端、硅�
 
 ### 项目规则文件
 
-在项目根目录创建 `KWCODE.md`，写入你的项目约定：
+在项目根目录创建 `OFFGRID.md`，写入你的项目约定：
 
 ```markdown
 ## [all] 通用规则
@@ -386,7 +386,7 @@ KWCode 支持任何 OpenAI 兼容的 API，包括 DeepSeek、Qwen 云端、硅�
 - 必须写 docstring
 ```
 
-KWCode 启动时自动加载，按任务类型注入对应规则。
+OffGrid 启动时自动加载，按任务类型注入对应规则。
 
 ---
 
@@ -394,16 +394,16 @@ KWCode 启动时自动加载，按任务类型注入对应规则。
 
 ```bash
 git clone https://github.com/val1813/kwcode.git
-cd kwcode
+cd offgrid
 pip install -e ".[dev]"
-python -m pytest kaiwu/tests/ -v --ignore=kaiwu/tests/bench_tasks
+python -m pytest offgrid/tests/ -v --ignore=offgrid/tests/bench_tasks
 # 311 tests should pass
 ```
 
 ### 项目结构
 
 ```
-kaiwu/
+offgrid/
 ├── cli/main.py              # CLI 入口，REPL，/multi 命令
 ├── core/
 │   ├── gate.py              # LLM 任务分类
@@ -440,30 +440,30 @@ kaiwu/
 
 ## 参考文献
 
-| 论文/项目 | 来源 | KWCode 中的应用 |
+| 论文/项目 | 来源 | OffGrid 中的应用 |
 |-----------|------|----------------|
-| **Agentless** | Xia et al., ICSE 2025 | 确定性流水线优于复杂 agent，KWCode 整体架构基于此思路 |
-| **CodeCompass** | arXiv:2602.20048, 2026 | 图遍历 G3 任务 99.4%，KWCode 的 AST 调用图定位直接借鉴 |
+| **Agentless** | Xia et al., ICSE 2025 | 确定性流水线优于复杂 agent，OffGrid 整体架构基于此思路 |
+| **CodeCompass** | arXiv:2602.20048, 2026 | 图遍历 G3 任务 99.4%，OffGrid 的 AST 调用图定位直接借鉴 |
 | **KGCompass** | Yang et al., arXiv:2503.21710, 2025 | 多跳图遍历定位，验证了调用图展开的有效性 |
-| **Debug2Fix** | Garg & Huang (Microsoft), ICML 2026 | 弱模型+调试器 > 强模型裸跑，KWCode 的 Debug Subagent 直接实现此论文思路 |
-| **LLMCompiler** | Kim et al., ICML 2024 | DAG 任务分解+并行调度，KWCode 的 TaskCompiler 借鉴其调度思想（自研轻量实现） |
-| **EE-MCP** | NeurIPS 2025 | 任务轨迹经验提取，KWCode 飞轮的轨迹→模式→专家生成流程借鉴此机制 |
-| **SICA** | arXiv:2504.15228, 2025 | 自我改进编码代理，KWCode 的 Prompt Optimizer 借鉴其自我优化循环 |
+| **Debug2Fix** | Garg & Huang (Microsoft), ICML 2026 | 弱模型+调试器 > 强模型裸跑，OffGrid 的 Debug Subagent 直接实现此论文思路 |
+| **LLMCompiler** | Kim et al., ICML 2024 | DAG 任务分解+并行调度，OffGrid 的 TaskCompiler 借鉴其调度思想（自研轻量实现） |
+| **EE-MCP** | NeurIPS 2025 | 任务轨迹经验提取，OffGrid 飞轮的轨迹→模式→专家生成流程借鉴此机制 |
+| **SICA** | arXiv:2504.15228, 2025 | 自我改进编码代理，OffGrid 的 Prompt Optimizer 借鉴其自我优化循环 |
 | **Self-Play** | arXiv:2502.14948, 2025 | 自博弈提升代码能力，飞轮 AB 测试门的设计参考 |
-| **Reflexion** | Shinn et al., NeurIPS 2023 | 失败模式持久化+重试时注入，KWCode 的 REFLECTION.md 直接实现 |
-| **AgentCoder** | Huang et al., EMNLP 2023 | 多专家分工验证，KWCode 的 Gate→专家流水线参考此分工模式 |
-| **Agent Psychometrics** | arXiv:2604.00594, 2026 | 任务特征预测 agent 成功率，KWCode 的模型能力自适应参考此研究 |
-| **TRUSTEE** | 2026 | 8B 模型可靠 tool calling 验证，KWCode 的 Gate 设计参考 |
+| **Reflexion** | Shinn et al., NeurIPS 2023 | 失败模式持久化+重试时注入，OffGrid 的 REFLECTION.md 直接实现 |
+| **AgentCoder** | Huang et al., EMNLP 2023 | 多专家分工验证，OffGrid 的 Gate→专家流水线参考此分工模式 |
+| **Agent Psychometrics** | arXiv:2604.00594, 2026 | 任务特征预测 agent 成功率，OffGrid 的模型能力自适应参考此研究 |
+| **TRUSTEE** | 2026 | 8B 模型可靠 tool calling 验证，OffGrid 的 Gate 设计参考 |
 
 ### 借鉴的开源项目
 
 | 项目 | 借鉴点 |
 |------|--------|
-| **Claude Code** (Anthropic) | CLAUDE.md 项目规则文件 → KWCode 的 KWCODE.md；Checkpoint 文件快照机制；/plan 计划模式 |
+| **Claude Code** (Anthropic) | CLAUDE.md 项目规则文件 → OffGrid 的 OFFGRID.md；Checkpoint 文件快照机制；/plan 计划模式 |
 | **Hermes** (Anthropic) | REPL 交互模式、MEMORY.md 记忆系统的交互设计 |
 | **OpenHands V1** (All Hands AI) | Agent delegation 任务分解思路、Context Condensation 上下文压缩、LLM-based 集成测试回检 |
 | **OpenCode** | 本地模型 coding agent 的产品形态参考；早期版本曾作为执行层底座探索 |
-| **SearXNG** | 零 API key 的本地搜索引擎，KWCode 集成为搜索后端 |
+| **SearXNG** | 零 API key 的本地搜索引擎，OffGrid 集成为搜索后端 |
 | **rank-bm25** | BM25Plus 算法实现，用于代码定位和搜索结果重排 |
 | **tree-sitter** | 多语言 AST 解析，用于调用图构建 |
 | **sentence-transformers** | Cross-Encoder 模型，用于搜索结果精排（可选依赖） |
@@ -482,12 +482,12 @@ kaiwu/
 
 ## 参与贡献
 
-**KWCode 是中国开发者做的，欢迎 fork 后自由修改优化。**
+**OffGrid 是中国开发者做的，欢迎 fork 后自由修改优化。**
 
 ### 推荐方式
 
 1. **Fork 本仓库**，在你自己的分支上修改
-2. 跑通测试：`python -m pytest kaiwu/tests/ --ignore=kaiwu/tests/bench_tasks`
+2. 跑通测试：`python -m pytest offgrid/tests/ --ignore=offgrid/tests/bench_tasks`
 3. 提交 PR 或直接在你的 fork 上用
 
 ### 可以做的事
@@ -495,8 +495,8 @@ kaiwu/
 **新增领域知识**（最简单，创建一个 SKILL.md 目录）：
 
 ```bash
-# 在 kaiwu/builtin_experts/ 下创建新目录
-mkdir kaiwu/builtin_experts/vue3
+# 在 offgrid/builtin_experts/ 下创建新目录
+mkdir offgrid/builtin_experts/vue3
 # 编辑 SKILL.md（参考现有专家格式）
 ```
 

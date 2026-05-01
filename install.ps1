@@ -63,14 +63,14 @@ try {
     Write-Warn "nvidia-smi 不可用，将使用 CPU 模式"
 }
 
-# ── Step 3: pip install kaiwu ────────────────────────────────
+# ── Step 3: pip install offgrid ────────────────────────────────
 Write-Step "安装 KwCode..."
 
 $installed = $false
 
 # 尝试默认源
 Write-Info "尝试默认 pip 源..."
-& $pythonCmd -m pip install kaiwu --quiet 2>&1 | Out-Null
+& $pythonCmd -m pip install offgrid --quiet 2>&1 | Out-Null
 if ($LASTEXITCODE -eq 0) {
     $installed = $true
     Write-Info "安装成功（默认源）"
@@ -79,7 +79,7 @@ if ($LASTEXITCODE -eq 0) {
 # 降级到清华镜像
 if (-not $installed) {
     Write-Warn "默认源安装失败，切换到清华镜像..."
-    & $pythonCmd -m pip install kaiwu -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn --quiet 2>&1 | Out-Null
+    & $pythonCmd -m pip install offgrid -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn --quiet 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         $installed = $true
         Write-Info "安装成功（清华镜像）"
@@ -88,7 +88,7 @@ if (-not $installed) {
 
 if (-not $installed) {
     Write-Err "KwCode 安装失败"
-    Write-Info "请手动执行: $pythonCmd -m pip install kaiwu"
+    Write-Info "请手动执行: $pythonCmd -m pip install offgrid"
     Write-Info "如果网络慢，加上: -i https://pypi.tuna.tsinghua.edu.cn/simple"
     exit 1
 }
@@ -159,18 +159,18 @@ if ($ollamaOk) {
 Write-Step "启动搜索服务（SearXNG）..."
 
 if (Get-Command docker -ErrorAction SilentlyContinue) {
-    $running = docker ps --format '{{.Names}}' | Where-Object { $_ -eq "kwcode-searxng" }
+    $running = docker ps --format '{{.Names}}' | Where-Object { $_ -eq "offgrid-searxng" }
     if ($running) {
         Write-Info "SearXNG 已在运行，跳过"
     } else {
-        $exists = docker ps -a --format '{{.Names}}' | Where-Object { $_ -eq "kwcode-searxng" }
+        $exists = docker ps -a --format '{{.Names}}' | Where-Object { $_ -eq "offgrid-searxng" }
         if ($exists) {
-            docker start kwcode-searxng
+            docker start offgrid-searxng
             Write-Info "SearXNG 已重新启动"
         } else {
             Write-Info "拉取 SearXNG 镜像（约150MB）..."
             docker pull searxng/searxng
-            docker run -d --name kwcode-searxng --restart always -p 8080:8080 searxng/searxng
+            docker run -d --name offgrid-searxng --restart always -p 8080:8080 searxng/searxng
             Write-Info "等待 SearXNG 启动..."
             for ($i = 1; $i -le 15; $i++) {
                 try {
@@ -186,26 +186,26 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
     Write-Info "安装 Docker 可获得更好的搜索体验：https://docs.docker.com/get-docker/"
 }
 
-# ── Step 6: kwcode init ──────────────────────────────────────
+# ── Step 6: offgrid init ──────────────────────────────────────
 Write-Step "初始化 KwCode..."
 
 try {
-    & kwcode init 2>&1 | Out-Null
+    & offgrid init 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Info "KAIWU.md 已初始化"
     }
 } catch {
-    Write-Info "跳过初始化（可稍后在项目目录执行 kwcode init）"
+    Write-Info "跳过初始化（可稍后在项目目录执行 offgrid init）"
 }
 
-# ── Step 7: kwcode status ────────────────────────────────────
+# ── Step 7: offgrid status ────────────────────────────────────
 Write-Step "验证安装..."
 
 try {
-    & kwcode status
+    & offgrid status
 } catch {
     Write-Warn "状态检查失败，但安装可能已成功"
-    Write-Info "请手动执行: kwcode status"
+    Write-Info "请手动执行: offgrid status"
 }
 
 # ── 完成 ─────────────────────────────────────────────────────
@@ -216,9 +216,9 @@ Write-Host "  ╚═════════════════════
 Write-Host ""
 Write-Host "  下一步:" -ForegroundColor Cyan
 Write-Host "    1. cd 到你的项目目录" -ForegroundColor White
-Write-Host "    2. kwcode init          # 初始化项目记忆" -ForegroundColor White
-Write-Host "    3. kwcode               # 进入交互模式" -ForegroundColor White
-Write-Host '    4. kwcode "修复登录bug"  # 直接执行任务' -ForegroundColor White
+Write-Host "    2. offgrid init          # 初始化项目记忆" -ForegroundColor White
+Write-Host "    3. offgrid               # 进入交互模式" -ForegroundColor White
+Write-Host '    4. offgrid "修复登录bug"  # 直接执行任务' -ForegroundColor White
 Write-Host ""
-Write-Host "  文档: https://github.com/kaiwu-agent/kaiwu" -ForegroundColor Gray
+Write-Host "  文档: https://github.com/offgrid-agent/offgrid" -ForegroundColor Gray
 Write-Host ""

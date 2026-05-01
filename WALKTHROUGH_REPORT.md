@@ -1,4 +1,4 @@
-# KWCode 系统走查报告（qwen3:8b 真实模型测试）
+# OffGrid 系统走查报告（qwen3:8b 真实模型测试）
 
 > 日期：2026-04-30
 > 模型：qwen3:8b (Q4_K_M, 本地 Ollama)
@@ -28,34 +28,34 @@
 ### 🔴 Bug（会导致运行时错误）
 
 **Issue 1: Planner._build_dag_from_hints regex 非贪婪匹配**
-- 文件：`kaiwu/core/planner.py`
+- 文件：`offgrid/core/planner.py`
 - 原因：`re.search(r'\[.*?\]', raw, re.DOTALL)` 遇到 `depends_on: []` 时在第一个 `]` 处终止
 - 影响：auto_decompose 永远返回 None（LLM 输出正确但解析失败）
 - 状态：✅ 已修复（改为贪婪 `r'\[.*\]'`）
 
 **Issue 2: TrajectoryCollector.get_by_expert() 方法不存在**
-- 文件：`kaiwu/flywheel/ab_tester.py` 调用 `self.collector.get_by_expert(expert_name)`
-- 文件：`kaiwu/flywheel/trajectory_collector.py` 没有这个方法
+- 文件：`offgrid/flywheel/ab_tester.py` 调用 `self.collector.get_by_expert(expert_name)`
+- 文件：`offgrid/flywheel/trajectory_collector.py` 没有这个方法
 - 影响：专家投产后触发 PromptOptimizer 时 AttributeError
 - 状态：❌ 待修复
 
 ### 🟡 空架子（功能存在但未接入）
 
 **Issue 3: session_md.py 未接入 REPL 退出路径**
-- 文件：`kaiwu/memory/session_md.py` 有 `save_session()` 和 `load_session()`
-- 文件：`kaiwu/cli/main.py` 没有导入也没有调用
+- 文件：`offgrid/memory/session_md.py` 有 `save_session()` 和 `load_session()`
+- 文件：`offgrid/cli/main.py` 没有导入也没有调用
 - 影响：SESSION.md 永远不会被写入，会话连续性是空架子
 - 状态：❌ 待修复
 
 **Issue 4: auto_decompose 未接入 _run_task()**
-- 文件：`kaiwu/core/planner.py` 有 `auto_decompose()` 方法
-- 文件：`kaiwu/cli/main.py` 的 `_run_task()` 没有调用它
+- 文件：`offgrid/core/planner.py` 有 `auto_decompose()` 方法
+- 文件：`offgrid/cli/main.py` 的 `_run_task()` 没有调用它
 - 影响：hard 任务不会自动拆分，只能手动 /multi
 - 状态：❌ 待修复
 
 **Issue 5: 预搜索（pre_search_results）未接入 _run_task()**
-- 文件：`kaiwu/core/orchestrator.py` 的 `run()` 接受 `pre_search_results` 参数
-- 文件：`kaiwu/cli/main.py` 的 `_run_task()` 没有传这个参数
+- 文件：`offgrid/core/orchestrator.py` 的 `run()` 接受 `pre_search_results` 参数
+- 文件：`offgrid/cli/main.py` 的 `_run_task()` 没有传这个参数
 - 影响：Gate 判断 needs_search=true 但预搜索不会触发
 - 状态：❌ 待修复
 

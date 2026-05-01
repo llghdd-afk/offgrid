@@ -1,6 +1,6 @@
-# KWCode 项目状态记录
+# OffGrid 项目状态记录
 
-> 项目路径：D:\program\codeagent2604\kwcode
+> 项目路径：D:\program\codeagent2604\offgrid
 > GitHub：https://github.com/val1813/kwcode
 > 启动日期：2026-04-26
 > 目标：本地模型 coding agent，通过确定性专家流水线让本地模型达到最高任务完成率
@@ -55,7 +55,7 @@
 - 5个确定性工具（read_file/write_file/run_bash/list_dir/git）
 
 **P1 四大功能（v0.5.0）**
-- KWCODE.md 项目规则文件（分段加载+按任务类型注入+token上限15%）
+- OFFGRID.md 项目规则文件（分段加载+按任务类型注入+token上限15%）
 - /plan 计划模式 + 三档风险评估（High/Medium/Low，基于历史失败记录）
 - Checkpoint 文件快照（git stash主路径+文件复制兜底+失败自动还原+降级建议）
 - 非代码文件读取（PDF/Word/MD/TXT + BM25Plus段落匹配 + Locator自动注入）
@@ -63,12 +63,12 @@
 **P2 三大功能（v0.6.0）**
 - 模型能力自适应（SMALL/MEDIUM/LARGE三档策略，自动检测，小模型强制plan）
 - 飞轮可见性通知（专家投产Panel+积累进度+里程碑，不打断任务）
-- 价值量化仪表盘（SQLite本地统计+kwcode stats命令+启动周报）
+- 价值量化仪表盘（SQLite本地统计+offgrid stats命令+启动周报）
 
 **搜索模块重构（v0.6.1）**
 - 四级内容提取管道（trafilatura→newspaper→readabilipy→soup，质量评分选最佳）
 - SearXNG + DDG 并行搜索（ThreadPoolExecutor + URL去重合并）
-- kwcode setup-search 一键安装SearXNG
+- offgrid setup-search 一键安装SearXNG
 
 **意图感知搜索（v0.6.2）**
 - 意图分类器增强（5类意图+关键词扩充+LLM fallback语义分类）
@@ -77,25 +77,25 @@
 - BM25Plus搜索结果重排
 
 **UI全面优化（v0.7.0）**
-- 删掉所有机器内部信息（logger只写~/.kwcode/kwcode.log，warnings静默）
+- 删掉所有机器内部信息（logger只写~/.offgrid/offgrid.log，warnings静默）
 - 执行过程spinner动画（rich.progress，transient=True完成后消失）
 - 完成后用户友好结果摘要（修改文件+改动bullet+测试结果）
 - 重影大字KAIWU Header + 状态栏深色背景
-- kwcode setup-search 一键安装SearXNG搜索引擎
+- offgrid setup-search 一键安装SearXNG搜索引擎
 
 **其他**
 - 专家注册表（15个预置专家YAML + .kwx导入导出）
 - 专家飞轮三道门（轨迹→模式检测→回测→AB测试→投产）
 - 3层记忆系统（PROJECT.md/EXPERT.md/PATTERN.md）
 - Office文档生成（Excel/PPT/Word）
-- MCP Router（kwcode serve-mcp）
+- MCP Router（offgrid serve-mcp）
 - 上下文压缩（纯算法，头尾保留+中间关键词提取，<10ms）
 - 中文分词BM25（DocReader CJK tokenizer）
 - /api 命令（临时/永久切换任意OpenAI兼容API）
 
 ### E2E 验收结果（2026-04-28，gemma3:4b）
 
-- P1: KWCODE.md注入✓ /plan风险评估✓ Checkpoint还原✓ DocReader注入✓ (8/8)
+- P1: OFFGRID.md注入✓ /plan风险评估✓ Checkpoint还原✓ DocReader注入✓ (8/8)
 - P2: 模型自适应(4b→SMALL)✓ 飞轮通知✓ ValueTracker✓ (6/6)
 - 集成: Gate分类✓ Chat流水线✓ Codegen流水线(2.9s)✓ (3/3)
 
@@ -114,7 +114,7 @@
 
 ### 待做
 
-1. SQLite 跨 session 查询（spec §7.1 kaiwu.db）
+1. SQLite 跨 session 查询（spec §7.1 offgrid.db）
 2. 12 个预置专家完整 benchmark（目前只跑了 BugFix+TestGen）
 3. 实时数据API提示注入（codegen涉及天气/股价时，prompt注入免费API信息，避免模型编造假数据）
 4. 多语言AST支持（JavaScript/TypeScript/Java/Go/Rust 调用图）
@@ -133,22 +133,22 @@
 ## 文件结构
 
 ```
-kwcode/
+offgrid/
 ├── pyproject.toml
 ├── README.md / README_zh.md
 ├── STATUS.md
-└── kaiwu/
+└── offgrid/
     ├── cli/
     │   ├── main.py              # REPL + spinner + 结果摘要 + 重影Header + setup-search
     │   ├── status_bar.py        # 状态栏(4档自适应) + TokPerSecEstimator
     │   └── onboarding.py        # 首次启动引导
     ├── core/
     │   ├── gate.py              # LLM任务分类 → 专家知识叠加
-    │   ├── orchestrator.py      # 确定性流水线 + KWCODE.md注入 + Checkpoint + ValueTracker
+    │   ├── orchestrator.py      # 确定性流水线 + OFFGRID.md注入 + Checkpoint + ValueTracker
     │   ├── context.py           # TaskContext数据类
     │   ├── planner.py           # /plan计划模式 + 风险评估
     │   ├── checkpoint.py        # 文件快照(git stash/文件复制)
-    │   ├── kwcode_md.py         # KWCODE.md分段加载+注入
+    │   ├── offgrid_md.py         # OFFGRID.md分段加载+注入
     │   ├── model_capability.py  # 模型三档自适应(SMALL/MEDIUM/LARGE)
     │   ├── context_pruner.py    # 上下文压缩(纯算法，<10ms)
     │   ├── network.py           # 网络探测+代理配置
