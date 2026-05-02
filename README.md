@@ -20,6 +20,7 @@
 
 | 日期 | 内容 |
 |------|------|
+| 05-02 | **MiMo-V2.5 系列模型原生支持** — 接入小米自研大模型，本地+云端双模式，8B/14B/30B 自适应路由 |
 | 04-30 | 三层上下文架构 + SSH持久会话 + Gate/路由优化 + PCED-Lite多源聚合 + 搜索site:自动限定 + qwen3:8b 20题真实验证 + 13项bug修复 |
 | 04-29 | 5元专家体系定稿 + 15个SKILL.md渐进加载 + DAG多任务编排 + Debug Subagent + Token预算/Guardrails/可观测性 |
 
@@ -181,6 +182,11 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 
 ## 功能特性
 
+### 模型支持（含 MiMo-V2.5 系列）
+- **MiMo-V2.5 / V2.5 Pro** 原生接入：小米自研大模型，MIT 协议开源，允许自由商用
+- **本地+云端双模式**：本地 8B/14B/30B 自适应路由，云端 API 一键切换
+- **模型能力自适应**：<10B 强制计划确认，10-30B 可选计划，>30B 宽松策略
+
 ### 代码能力
 - BM25 + 调用图两阶段定位，G3 隐藏依赖准确率 99.4%（论文验证）
 - Generator 只改必要部分，从文件读 original，LLM 只生成 modified
@@ -238,6 +244,7 @@ Prompt Optimizer（可选，需 Anthropic API key）：
 | 多任务串并行 | ❌ | ❌ | ✅ 独有 |
 | AST 调用图定位 | ❌ | ❌ | ✅ 独有 |
 | 专家飞轮 + Prompt 自动优化 | ❌ | ❌ | ✅ 独有 |
+| MiMo-V2.5 系列模型支持 | ❌ | ❌ | ✅ 独有 |
 | /plan 风险评估 | ✅ | ❌ | ✅ |
 | Checkpoint 回滚 | ✅ | ❌ | ✅ |
 | 价值量化仪表盘 | ❌ | ❌ | ✅ 独有 |
@@ -393,7 +400,7 @@ OffGrid 启动时自动加载，按任务类型注入对应规则。
 ## 开发者安装
 
 ```bash
-git clone https://github.com/val1813/kwcode.git
+git clone https://github.com/llghdd-afk/offgrid.git
 cd offgrid
 pip install -e ".[dev]"
 python -m pytest offgrid/tests/ -v --ignore=offgrid/tests/bench_tasks
@@ -452,6 +459,7 @@ offgrid/
 | **Self-Play** | arXiv:2502.14948, 2025 | 自博弈提升代码能力，飞轮 AB 测试门的设计参考 |
 | **Reflexion** | Shinn et al., NeurIPS 2023 | 失败模式持久化+重试时注入，OffGrid 的 REFLECTION.md 直接实现 |
 | **AgentCoder** | Huang et al., EMNLP 2023 | 多专家分工验证，OffGrid 的 Gate→专家流水线参考此分工模式 |
+| **MiMo-V2.5** | Xiaomi, 2026 | 小米自研大模型，MIT 协议开源。OffGrid 已原生接入，支持本地+云端双模式 |
 | **Agent Psychometrics** | arXiv:2604.00594, 2026 | 任务特征预测 agent 成功率，OffGrid 的模型能力自适应参考此研究 |
 | **TRUSTEE** | 2026 | 8B 模型可靠 tool calling 验证，OffGrid 的 Gate 设计参考 |
 
