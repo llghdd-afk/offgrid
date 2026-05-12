@@ -36,7 +36,8 @@ class LLMBackend:
     # Models known to use thinking/reasoning tokens that consume num_predict budget
     REASONING_PREFIXES = ("deepseek-r1", "qwq", "qwen3", "gemma4")
     # Multiplier for num_predict when using reasoning models
-    REASONING_TOKEN_MULTIPLIER = 8
+    REASONING_TOKEN_MULTIPLIER = 2
+
 
     # ModelScope model mapping for China network auto-switching
     MODELSCOPE_MODELS = {
@@ -259,27 +260,34 @@ class LLMBackend:
         """Chat-style completion (for Ollama /api/chat or converted to prompt for llama.cpp)."""
         import time as _time
         t0 = _time.perf_counter()
-        if self._mode == "ollama":
-            result = self._chat_ollama(messages, max_tokens, temperature, stop)
-        else:
-            # Convert messages to single prompt for llama.cpp
-            system = ""
-            prompt_parts = []
-            for msg in messages:
-                role = msg.get("role", "user")
-                content = msg.get("content", "")
-                if role == "system":
-                    system = content
-                elif role == "user":
-                    prompt_parts.append(f"User: {content}")
-                elif role == "assistant":
-                    prompt_parts.append(f"Assistant: {content}")
-            prompt_parts.append("Assistant:")
-            prompt = "\n".join(prompt_parts)
-            result = self._generate_native(prompt, system, max_tokens, temperature, stop, grammar_str)
+        result = ""
+        try:
+            if self._mode == "ollama":
+                result = self._chat_ollama(messages, max_tokens, temperature, stop)
+            else:
+                # Convert messages to single prompt for llama.cpp
+                system = ""
+                prompt_parts = []
+                for msg in messages:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                    if role == "system":
+                        system = content
+                    elif role == "user":
+                        prompt_parts.append(f"User: {content}")
+                    elif role == "assistant":
+                        prompt_parts.append(f"Assistant: {content}")
+                prompt_parts.append("Assistant:")
+                prompt = "\n".join(prompt_parts)
+                result = self._generate_native(prompt, system, max_tokens, temperature, stop, grammar_str)
+        except Exception as e:
+            logger.exception("LLM chat failed: %s", e)
+            result = f"[LLM_ERROR] {type(e).__name__}: {e}"
         self._last_elapsed = _time.perf_counter() - t0
         if self._tps_estimator:
             self._tps_estimator.record(result, self._last_elapsed)
+        if not isinstance(result, str):
+            result = str(result)
         return result
 
     def _chat_ollama(
@@ -322,14 +330,27 @@ class LLMBackend:
             msg = data.get("message", {})
             if not msg:
                 logger.error("Ollama response missing 'message' key: %s", str(data)[:200])
-                return ""
+                return json.dumps(data, ensure_ascii=False)
             raw = msg.get("content", "").strip()
-
-            if not raw and self._is_reasoning:
+            if not raw:
                 thinking = msg.get("thinking", "")
                 if thinking:
                     logger.info("content为空，从thinking字段提取（%d chars）", len(thinking))
                     raw = thinking.strip()
+            if raw.startswith("Thinking Process:"):
+                # Prefer a concise final answer instead of exposing chain-of-thought.
+                parts = [p.strip() for p in raw.split("\n\n") if p.strip()]
+                if parts:
+                    for part in parts:
+                        if any(k in part for k in ["最终", "答案", "结论", "我", "我是", "可以", "建议", "先"]):
+                            raw = part
+                            break
+                    else:
+                        raw = parts[-1]
+            if not raw:
+                raw = data.get("response", "").strip()
+            if not raw:
+                raw = json.dumps(data, ensure_ascii=False)
 
             # Track tokens (estimate for Ollama: ~4 chars per token)
             input_est = sum(len(m.get("content", "")) for m in messages) // 4

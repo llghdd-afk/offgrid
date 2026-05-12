@@ -218,11 +218,8 @@ def _run_task(task, gate, orchestrator, memory, project_root, verbose, plan=Fals
         try:
             from offgrid.core.planner import Planner
             from offgrid.memory import pattern_md
-            planner = Planner(
-                locator=orchestrator.locator,
-                pattern_md_module=pattern_md,
-                llm=orchestrator.generator.llm,
-            )
+
+            planner = Planner(locator=orchestrator.locator, pattern_md_module=pattern_md, llm=orchestrator.generator.llm)
             auto_tasks = planner.auto_decompose(task, gate_result, project_root)
             if auto_tasks and len(auto_tasks) > 1:
                 console.print(f"\n  [dim]检测到复杂任务，自动拆分为 {len(auto_tasks)} 个子任务[/dim]")

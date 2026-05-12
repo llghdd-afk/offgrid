@@ -33,6 +33,7 @@ rerank = ["sentence-transformers>=2.7.0"]
 
 [project.scripts]
 offgrid = "offgrid.cli.main:app"
+offgrid-web = "offgrid.webapp:app"
 
 [tool.setuptools.packages.find]
 where = ["."]

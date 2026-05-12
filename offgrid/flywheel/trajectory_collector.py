@@ -55,13 +55,11 @@ class TrajectoryCollector:
         gate = ctx.gate_result or {}
         expert_type = gate.get("expert_type", "unknown")
 
-        # Extract pipeline from gate or use default
         pipeline = gate.get("pipeline", [])
         if not pipeline:
             from offgrid.core.orchestrator import EXPERT_SEQUENCES
             pipeline = EXPERT_SEQUENCES.get(expert_type, ["generator", "verifier"])
 
-        # Extract modified files from generator output
         files_modified = []
         if ctx.generator_output and "patches" in ctx.generator_output:
             files_modified = [p.get("file", "") for p in ctx.generator_output["patches"] if p.get("file")]
@@ -107,6 +105,13 @@ class TrajectoryCollector:
         """Load all trajectories for a given expert_type."""
         return [t for t in self._load_all() if t.expert_used == expert_type]
 
+    def get_by_expert(self, expert_name: str) -> list[TaskTrajectory]:
+        """Load trajectories where the matched expert_name matches."""
+        return [
+            t for t in self._load_all()
+            if t.gate_result.get("expert_name") == expert_name
+        ]
+
     def _load_all(self) -> list[TaskTrajectory]:
         """Load all trajectory JSON files from disk."""
         results = []
@@ -124,10 +129,3 @@ class TrajectoryCollector:
             except Exception as e:
                 logger.warning("Failed to load trajectory %s: %s", fname, e)
         return results
-
-    def get_by_expert(self, expert_name: str) -> list[TaskTrajectory]:
-        """Load trajectories where the matched expert_name matches."""
-        return [
-            t for t in self._load_all()
-            if t.gate_result.get("expert_name") == expert_name
-        ]
