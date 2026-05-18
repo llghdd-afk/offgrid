@@ -63,3 +63,10 @@ class TaskContext:
 
     # 上游依赖结果摘要（Active Context，≤2K tokens，供Gate/Generator看）
     upstream_summary: str = ""
+
+    # ── ReAct 模式 ──
+    use_react: bool = False           # Gate判定是否走ReAct循环
+    react_result: Optional[dict] = None  # ReActOrchestrator的输出
+
+    # ── Precise Retry ──
+    retry_hint: str = ""              # 精准重试提示（接近通过时注入）

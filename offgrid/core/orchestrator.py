@@ -23,6 +23,7 @@ from offgrid.flywheel.pattern_detector import PatternDetector
 from offgrid.flywheel.ab_tester import ABTester
 from offgrid.core.checkpoint import Checkpoint
 from offgrid.core.offgrid_md import load_offgrid_md, build_offgrid_system
+from offgrid.core.react_orchestrator import ReActOrchestrator
 from offgrid.stats.value_tracker import ValueTracker
 from offgrid.notification.flywheel_notifier import FlywheelNotifier
 
@@ -140,6 +141,10 @@ class PipelineOrchestrator:
                 "elapsed": elapsed,
             }
 
+        # ── ReAct routing: complex tasks use multi-step reasoning loop ──
+        if ReActOrchestrator.should_use_react(gate_result, user_input):
+            return self._run_react(ctx, gate_result, project_root, on_status, start_time)
+
         # Gate 3: AB test — check if a candidate expert should be used for this task
         ab_candidate_name = None
         ab_used_new = False
@@ -238,6 +243,15 @@ class PipelineOrchestrator:
 
             # Save failure info for retry strategy
             ctx.previous_failure = error_detail
+
+            # ── Precise Retry: detect near-pass and inject focused hint ──
+            near_pass = self._is_near_pass(ctx)
+            if near_pass:
+                ctx.retry_hint = self._build_precise_retry_hint(ctx)
+                self._emit(on_status, "precise_retry",
+                           f"接近通过！只差{near_pass}个测试，精准重试")
+            else:
+                ctx.retry_hint = ""
 
             self._emit(on_status, "retry", f"第{ctx.retry_count}次尝试失败：{error_detail[:100]}")
 
@@ -462,6 +476,80 @@ class PipelineOrchestrator:
             logger.debug("Reviewer failed (non-blocking): %s", e)
             return {"aligned": True, "confidence": 0.0, "gap": ""}
 
+    def _run_react(
+        self,
+        ctx: TaskContext,
+        gate_result: dict,
+        project_root: str,
+        on_status,
+        start_time: float,
+    ) -> dict:
+        """
+        Execute ReAct loop for complex tasks.
+        Called when ReActOrchestrator.should_use_react() returns True.
+        """
+        # Step 1: Run Locator first to pre-identify relevant files
+        # (ReAct benefits from knowing which files to look at)
+        self._emit(on_status, "react_locate", "ReAct前置定位...")
+        locator_result = self.locator.run(ctx)
+        if locator_result:
+            ctx.locator_output = locator_result
+            files = locator_result.get("relevant_files", [])
+            self._emit(on_status, "react_locate_done", f"定位到 {len(files)} 个相关文件")
+
+        # Step 2: Run ReAct loop
+        react = ReActOrchestrator(
+            llm=self.generator.llm,
+            tool_executor=self.tools,
+            max_steps=10,
+        )
+        react_result = react.run(ctx, on_status=on_status)
+
+        # Step 3: Record results
+        elapsed = time.time() - start_time
+        success = react_result.success
+
+        # Update context with ReAct results
+        ctx.react_result = {
+            "steps": len(react_result.steps),
+            "files_modified": list(react_result.modified_files.keys()),
+            "tests_passed": react_result.tests_passed,
+            "tests_total": react_result.tests_total,
+        }
+
+        # Apply modified files (ReAct already wrote them via ToolExecutor)
+        # The Generator output is synthesized from ReAct results for compatibility
+        ctx.generator_output = {
+            "explanation": f"ReAct模式完成 ({len(react_result.steps)}步)",
+            "patches": [
+                {"file": path, "modified": content}
+                for path, content in react_result.modified_files.items()
+            ],
+        }
+        ctx.verifier_output = {
+            "passed": success,
+            "tests_passed": react_result.tests_passed,
+            "tests_total": react_result.tests_total,
+            "error_detail": "" if success else "ReAct循环完成但测试未全部通过",
+        }
+
+        # Flywheel / value tracking (same as pipeline path)
+        self._record_trajectory(ctx, success, elapsed, on_status)
+        self._record_value(project_root, gate_result, success, elapsed, ctx)
+
+        if success:
+            self.memory.save(project_root, ctx, elapsed=elapsed)
+            self._do_review(ctx, on_status)
+        else:
+            self.memory.save_failure(project_root, ctx, elapsed=elapsed)
+
+        return {
+            "success": success,
+            "context": ctx,
+            "error": None if success else "ReAct循环完成但任务未成功",
+            "elapsed": elapsed,
+        }
+
     @staticmethod
     def _emit(callback, stage: str, detail: str):
         """Emit status update if callback provided."""
@@ -485,6 +573,52 @@ class PipelineOrchestrator:
         ]
         lower = user_input.lower()
         return any(kw in lower for kw in keywords)
+
+    def _is_near_pass(self, ctx: TaskContext) -> int:
+        """
+        Detect if the task is 'almost passing' — only 1-2 tests away.
+        Returns the number of failing tests (0 if not near-pass).
+        """
+        if not ctx.verifier_output:
+            return 0
+        passed = ctx.verifier_output.get("tests_passed", 0)
+        total = ctx.verifier_output.get("tests_total", 0)
+        if total == 0:
+            return 0
+        failed = total - passed
+        # Near-pass: 1-2 tests failing, and at least 50% passing
+        if 0 < failed <= 2 and passed >= total * 0.5:
+            return failed
+        return 0
+
+    def _build_precise_retry_hint(self, ctx: TaskContext) -> str:
+        """
+        Build a focused retry hint for near-pass scenarios.
+        Preserves full diagnostic info (up to 800 chars) and adds
+        a targeted instruction: only fix the specific failing tests.
+        """
+        parts = ["## 精准重试提示"]
+
+        error_detail = ctx.verifier_output.get("error_detail", "") if ctx.verifier_output else ""
+        passed = ctx.verifier_output.get("tests_passed", 0) if ctx.verifier_output else 0
+        total = ctx.verifier_output.get("tests_total", 0) if ctx.verifier_output else 0
+
+        parts.append(f"当前状态: {passed}/{total} 测试通过，只差{total - passed}个。")
+
+        # Preserve full error detail (up to 800 chars instead of 100)
+        if error_detail:
+            if len(error_detail) > 800:
+                error_detail = error_detail[:800] + "\n... (截断)"
+            parts.append(f"\n### 失败详情\n{error_detail}")
+
+        # Focused instruction
+        parts.append(
+            "\n### 修复指令"
+            "\n只修复上面报告的失败测试，不要改动其他代码。"
+            "\n分析失败原因，做最小化修改。"
+        )
+
+        return "\n".join(parts)
 
     def _record_value(self, project_root, gate_result, success, elapsed, ctx):
         """P2: Record task to local SQLite for value dashboard (non-blocking)."""
